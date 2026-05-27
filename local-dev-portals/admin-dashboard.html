@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Admin Dashboard | Onboarding HRMS</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <!-- React and ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Babel for in-browser JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              200: '#e2e8f0',
+              300: '#cbd5e1',
+              400: '#94a3b8',
+              500: '#64748b',
+              600: '#475569',
+              700: '#334155',
+              800: '#1e293b',
+              900: '#0f172a',
+              950: '#020617',
+            },
+            status: {
+              pending: '#94a3b8',
+              progress: '#f59e0b',
+              complete: '#10b981',
+            }
+          },
+          fontFamily: {
+            sans: ['"DM Sans"', 'sans-serif'],
+            display: ['Syne', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'DM Sans', sans-serif;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-slate-200">
+
+  <div id="root" class="flex-1 flex flex-col"></div>
+
+  <!-- React code -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // Hardcoded mock data inside dashboard for instant preview
+    const INITIAL_EMPLOYEES = [
+      {
+        employee_id: "71fb20a1-d419-4822-baee-b223ff9655ad",
+        full_name: "Eleanor Pena",
+        email: "eleanor.pena@example.com",
+        department: "Engineering",
+        role: "Senior backend developer",
+        joining_date: new Date().toISOString().split("T")[0], // Today
+        employment_type: "full_time",
+        onboarding_status: "IT_PROVISIONING",
+        created_at: "2026-05-24T10:00:00Z",
+        updated_at: "2026-05-25T14:20:00Z",
+        docs: {
+          id_proof: { status: "verified", s3_key: "documents/eleanor/id_proof.pdf", uploaded_at: "2026-05-24T12:00:00Z", file_size_bytes: 420192 },
+          degree_certificate: { status: "verified", s3_key: "documents/eleanor/degree.pdf", uploaded_at: "2026-05-24T12:05:00Z", file_size_bytes: 1204859 },
+          signed_offer: { status: "verified", s3_key: "documents/eleanor/offer.pdf", uploaded_at: "2026-05-25T14:20:00Z", file_size_bytes: 890312 },
+        },
+        stage_progress: {
+          document_collection: { status: "complete", completed_at: "2026-05-25T14:20:00Z", reminded_count: 0 },
+          it_provisioning: { status: "in-progress", completed_at: "", reminded_count: 1 },
+          policy_signoff: { status: "pending", completed_at: "", reminded_count: 0 },
+          manager_intro: { status: "pending", completed_at: "", reminded_count: 0 }
+        }
+      },
+      {
+        employee_id: "542a201b-c6b2-4d22-aa59-d890fa211467",
+        full_name: "Jane Cooper",
+        email: "jane.cooper@example.com",
+        department: "Product",
+        role: "Lead UX Researcher",
+        joining_date: "2026-06-01",
+        employment_type: "full_time",
+        onboarding_status: "DOCS_PENDING",
+        created_at: "2026-05-25T08:00:00Z",
+        updated_at: "2026-05-25T08:00:00Z",
+        docs: {
+          id_proof: { status: "verified", s3_key: "documents/jane/id_proof.png", uploaded_at: "2026-05-25T08:30:00Z", file_size_bytes: 2049102 },
+          degree_certificate: { status: "rejected", s3_key: "documents/jane/degree.jpg", uploaded_at: "2026-05-25T08:45:00Z", file_size_bytes: 3204912, reject_reason: "Forbidden file layout size limit exceeded" },
+          signed_offer: { status: "pending", s3_key: "", uploaded_at: "", file_size_bytes: 0 }
+        },
+        stage_progress: {
+          document_collection: { status: "in-progress", completed_at: "", reminded_count: 2 },
+          it_provisioning: { status: "pending", completed_at: "", reminded_count: 0 },
+          policy_signoff: { status: "pending", completed_at: "", reminded_count: 0 },
+          manager_intro: { status: "pending", completed_at: "", reminded_count: 0 }
+        }
+      },
+      {
+        employee_id: "084a322c-a010-410a-bb70-22c608149ad9",
+        full_name: "Guy Hawkins",
+        email: "guy.hawkins@example.com",
+        department: "Operations",
+        role: "Office Coordinator",
+        joining_date: "2026-06-15",
+        employment_type: "contract",
+        onboarding_status: "POLICY_SIGNOFF",
+        created_at: "2026-05-22T09:00:00Z",
+        updated_at: "2026-05-23T11:00:00Z",
+        docs: {
+          id_proof: { status: "verified", s3_key: "documents/guy/id.pdf", uploaded_at: "2026-05-22T10:00:00Z", file_size_bytes: 182390 },
+          degree_certificate: { status: "verified", s3_key: "documents/guy/degree.pdf", uploaded_at: "2026-05-22T10:15:00Z", file_size_bytes: 940129 },
+          signed_offer: { status: "verified", s3_key: "documents/guy/offer.pdf", uploaded_at: "2026-05-22T10:20:00Z", file_size_bytes: 520481 },
+        },
+        stage_progress: {
+          document_collection: { status: "complete", completed_at: "2026-05-22T10:20:00Z", reminded_count: 0 },
+          it_provisioning: { status: "complete", completed_at: "2026-05-23T11:00:00Z", reminded_count: 0 },
+          policy_signoff: { status: "in-progress", completed_at: "", reminded_count: 0 },
+          manager_intro: { status: "pending", completed_at: "", reminded_count: 0 }
+        }
+      },
+      {
+        employee_id: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+        full_name: "Esther Howard",
+        email: "esther.howard@example.com",
+        department: "Finance",
+        role: "Financial Analyst",
+        joining_date: "2026-05-20", // Start this month
+        employment_type: "full_time",
+        onboarding_status: "DAY1_READY",
+        created_at: "2026-05-15T09:00:00Z",
+        updated_at: "2026-05-18T16:00:00Z",
+        policy_signature: "Esther Howard",
+        docs: {
+          id_proof: { status: "verified", s3_key: "documents/esther/id.png", uploaded_at: "2026-05-15T11:00:00Z", file_size_bytes: 1204918 },
+          degree_certificate: { status: "verified", s3_key: "documents/esther/degree.pdf", uploaded_at: "2026-05-15T11:30:00Z", file_size_bytes: 3109281 },
+          signed_offer: { status: "verified", s3_key: "documents/esther/offer.pdf", uploaded_at: "2026-05-15T11:45:00Z", file_size_bytes: 940128 },
+        },
+        stage_progress: {
+          document_collection: { status: "complete", completed_at: "2026-05-15T11:45:00Z", reminded_count: 0 },
+          it_provisioning: { status: "complete", completed_at: "2026-05-16T14:00:00Z", reminded_count: 0 },
+          policy_signoff: { status: "complete", completed_at: "2026-05-17T10:00:00Z", reminded_count: 0 },
+          manager_intro: { status: "complete", completed_at: "2026-05-18T16:00:00Z", reminded_count: 0 }
+        }
+      }
+    ];
+
+    function App() {
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [authError, setAuthError] = useState(null);
+
+      // System list
+      const [employees, setEmployees] = useState(INITIAL_EMPLOYEES);
+      const [loading, setLoading] = useState(false);
+      const [lastUpdated, setLastUpdated] = useState("");
+      
+      const [expandedRows, setExpandedRows] = useState({});
+      const [selectedRows, setSelectedRows] = useState({});
+
+      // Filter settings
+      const [search, setSearch] = useState("");
+      const [filterDepartment, setFilterDepartment] = useState("ALL");
+      const [filterStage, setFilterStage] = useState("ALL");
+      const [filterType, setFilterType] = useState("ALL");
+      const [startDate, setStartDate] = useState("");
+      const [endDate, setEndDate] = useState("");
+
+      // Initialize Lucide icons on updates
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setAuthError(null);
+        if (!email.trim() || !password.trim()) {
+          setAuthError("Email and password are required.");
+          return;
+        }
+
+        // Simulating Cognito authorization checks
+        setLoading(true);
+        setTimeout(() => {
+          setLoading(false);
+          if (email === "admin@company.com" && password === "AdminPass@1") {
+            setIsAuthenticated(true);
+            setLastUpdated(new Date().toLocaleTimeString());
+          } else {
+            setAuthError("Invalid Cognito Admin credentials. (Hint: admin@company.com / AdminPass@1)");
+          }
+        }, 1000);
+      };
+
+      const handleLogout = () => {
+        setIsAuthenticated(false);
+        setEmail("");
+        setPassword("");
+      };
+
+      const toggleRow = (id) => {
+        setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+      };
+
+      const toggleSelect = (id) => {
+        setSelectedRows(prev => ({ ...prev, [id]: !prev[id] }));
+      };
+
+      const toggleAllSelect = () => {
+        const allSelected = filteredEmployees.every(emp => selectedRows[emp.employee_id]);
+        const nextSelects = {};
+        if (!allSelected) {
+          filteredEmployees.forEach(emp => {
+            nextSelects[emp.employee_id] = true;
+          });
+        }
+        setSelectedRows(nextSelects);
+      };
+
+      const completeStage = (employeeId, stage) => {
+        setEmployees(prev => prev.map(emp => {
+          if (emp.employee_id === employeeId) {
+            let nextStatus = emp.onboarding_status;
+            if (stage === 'it_provisioning') nextStatus = 'POLICY_SIGNOFF';
+            else if (stage === 'manager_intro') nextStatus = 'DAY1_READY';
+
+            return {
+              ...emp,
+              onboarding_status: nextStatus,
+              stage_progress: {
+                ...emp.stage_progress,
+                [stage]: { status: 'complete', completed_at: new Date().toISOString() },
+                ...(stage === 'it_provisioning' ? { policy_signoff: { status: 'in-progress', completed_at: "" } } : {})
+              }
+            };
+          }
+          return emp;
+        }));
+      };
+
+      const sendReminder = (employeeId, stage) => {
+        alert(`SES reminder notification dispatched successfully to employee: ${employeeId} for Stage: ${stage}`);
+      };
+
+      // Metrics computations
+      const metrics = useMemo(() => {
+        let inFlight = 0;
+        let docsPending = 0;
+        let joiningToday = 0;
+        let completedThisMonth = 0;
+
+        const todayStr = new Date().toISOString().split("T")[0];
+        const currentMonthStr = todayStr.substring(0, 7);
+
+        employees.forEach(emp => {
+          if (emp.onboarding_status !== "DAY1_READY" && emp.onboarding_status !== "FAILED") {
+            inFlight++;
+          }
+          if (emp.onboarding_status === "DOCS_PENDING") {
+            docsPending++;
+          }
+          if (emp.joining_date === todayStr) {
+            joiningToday++;
+          }
+          if (emp.onboarding_status === "DAY1_READY" && emp.updated_at.startsWith(currentMonthStr)) {
+            completedThisMonth++;
+          }
+        });
+
+        return { inFlight, docsPending, joiningToday, completedThisMonth };
+      }, [employees]);
+
+      // Filtering calculations
+      const filteredEmployees = useMemo(() => {
+        return employees.filter(emp => {
+          const matchesSearch = emp.full_name.toLowerCase().includes(search.toLowerCase()) || 
+                                emp.email.toLowerCase().includes(search.toLowerCase());
+          
+          const matchesDept = filterDepartment === "ALL" || emp.department === filterDepartment;
+          const matchesStage = filterStage === "ALL" || emp.onboarding_status === filterStage;
+          const matchesType = filterType === "ALL" || emp.employment_type === filterType;
+
+          const matchesStart = !startDate || emp.joining_date >= startDate;
+          const matchesEnd = !endDate || emp.joining_date <= endDate;
+
+          return matchesSearch && matchesDept && matchesStage && matchesType && matchesStart && matchesEnd;
+        });
+      }, [employees, search, filterDepartment, filterStage, filterType, startDate, endDate]);
+
+      const exportCSV = () => {
+        const headers = ["Name", "Email", "Department", "Role", "Joining Date", "Status"];
+        const rows = filteredEmployees.map(emp => [
+          emp.full_name,
+          emp.email,
+          emp.department,
+          emp.role,
+          emp.joining_date,
+          emp.onboarding_status
+        ]);
+
+        const csvContent = "data:text/csv;charset=utf-8," + 
+          [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `onboarding_dashboard_${new Date().toISOString().split("T")[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      // Cognito Auth screen template
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen bg-navy-950 text-navy-100 flex items-center justify-center py-12 px-4 selection:bg-navy-800 selection:text-navy-200">
+            <div className="w-full max-w-md bg-navy-900 border border-navy-800 p-8 shadow-2xl">
+              <div className="space-y-2 text-center mb-8">
+                <h1 className="text-3xl font-display uppercase tracking-tight text-white">HR Admin Login</h1>
+                <p className="text-navy-400 text-sm">Identity Management Single Sign-On (SSO)</p>
+              </div>
+
+              {authError && (
+                <div className="bg-red-950/50 border border-red-800 p-4 mb-6 flex gap-2 text-red-200 text-xs">
+                  <i data-lucide="shield-alert" class="w-4 h-4 text-red-400 flex-shrink-0"></i>
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-navy-300">Admin Email</label>
+                  <input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-navy-950 border border-navy-800 p-3 text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition text-sm"
+                    placeholder="admin@company.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-navy-300">Password</label>
+                  <input 
+                    type="password" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-navy-950 border border-navy-800 p-3 text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition text-sm"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-white hover:bg-slate-200 text-navy-950 font-semibold p-4 uppercase tracking-wider transition text-sm flex justify-center items-center gap-2"
+                >
+                  {loading ? "Authenticating..." : "Authenticate Securely"}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center text-[10px] text-navy-500 font-mono">
+                Credentials: <strong>admin@company.com</strong> / <strong>AdminPass@1</strong>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col w-full">
+          {/* Header */}
+          <header className="bg-navy-900 text-white border-b border-navy-950 py-4 px-6 flex justify-between items-center sticky top-0 z-50">
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-display uppercase tracking-tight">HRMS Onboarding Admin</h1>
+              <span className="text-[10px] bg-emerald-500 text-navy-950 font-mono font-semibold px-2 py-0.5 uppercase rounded-sm">Dashboard Connected</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-medium">
+              <span className="text-navy-400">Last updated: {lastUpdated || "Never"}</span>
+              <button onClick={() => setLastUpdated(new Date().toLocaleTimeString())} className="p-1 hover:text-navy-300 transition">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              </button>
+              <div className="h-4 w-[1px] bg-navy-800" />
+              <button onClick={handleLogout} className="flex items-center gap-1.5 text-navy-400 hover:text-white transition">
+                Logout <i data-lucide="log-out" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </header>
+
+          {/* Metrics bar */}
+          <main className="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+            <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
+                <div className="bg-navy-900 text-white p-3 rounded-none">
+                  <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">In-Flight Pipeline</div>
+                  <div className="text-2xl font-bold font-display text-slate-900">{metrics.inFlight}</div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
+                <div className="bg-amber-500 text-navy-950 p-3 rounded-none">
+                  <i data-lucide="file-text" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Docs Pending Verify</div>
+                  <div className="text-2xl font-bold font-display text-slate-900">{metrics.docsPending}</div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
+                <div className="bg-indigo-600 text-white p-3 rounded-none">
+                  <i data-lucide="calendar" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Joining Today</div>
+                  <div className="text-2xl font-bold font-display text-slate-900">{metrics.joiningToday}</div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
+                <div className="bg-emerald-600 text-white p-3 rounded-none">
+                  <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Completed This Month</div>
+                  <div className="text-2xl font-bold font-display text-slate-900">{metrics.completedThisMonth}</div>
+                </div>
+              </div>
+            </section>
+
+            {/* Filter Bar */}
+            <section className="bg-white border border-slate-200 p-4 space-y-4 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex-1 relative">
+                  <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3.5"></i>
+                  <input 
+                    type="text" 
+                    placeholder="Search by new hire name or email..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-slate-400 transition"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 md:flex md:items-center gap-2">
+                  <select 
+                    value={filterDepartment} 
+                    onChange={(e) => setFilterDepartment(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 p-2 text-xs font-semibold focus:outline-none"
+                  >
+                    <option value="ALL">All Departments</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Product">Product</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Finance">Finance</option>
+                  </select>
+
+                  <select 
+                    value={filterStage} 
+                    onChange={(e) => setFilterStage(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 p-2 text-xs font-semibold focus:outline-none"
+                  >
+                    <option value="ALL">All Stages</option>
+                    <option value="DOCS_PENDING">Documents Pending</option>
+                    <option value="IT_PROVISIONING">IT Provisioning</option>
+                    <option value="POLICY_SIGNOFF">Policy Sign-off</option>
+                    <option value="MANAGER_INTRO">Manager Intro</option>
+                    <option value="DAY1_READY">Day 1 Ready</option>
+                  </select>
+
+                  <select 
+                    value={filterType} 
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 p-2 text-xs font-semibold focus:outline-none"
+                  >
+                    <option value="ALL">All Employment</option>
+                    <option value="full_time">Full Time</option>
+                    <option value="contract">Contract</option>
+                    <option value="intern">Intern</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between border-t border-slate-100 pt-3 gap-3">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span>Start Range:</span>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-slate-50 border border-slate-200 p-1 text-xs focus:outline-none" />
+                  <span>End Range:</span>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-slate-50 border border-slate-200 p-1 text-xs focus:outline-none" />
+                </div>
+
+                <button 
+                  onClick={exportCSV}
+                  className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-2 px-4 flex items-center gap-1.5 transition"
+                >
+                  <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+                </button>
+              </div>
+            </section>
+
+            {/* Table */}
+            <section className="bg-white border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                      <th className="py-4 px-6 w-8 text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={filteredEmployees.length > 0 && filteredEmployees.every(emp => selectedRows[emp.employee_id])}
+                          onChange={toggleAllSelect}
+                        />
+                      </th>
+                      <th className="py-4 px-4">New Hire</th>
+                      <th className="py-4 px-4">Department</th>
+                      <th className="py-4 px-4">Start Date</th>
+                      <th className="py-4 px-4 text-center">Docs Coll</th>
+                      <th className="py-4 px-4 text-center">IT Prov</th>
+                      <th className="py-4 px-4 text-center">Policies</th>
+                      <th className="py-4 px-4 text-center">Manager</th>
+                      <th className="py-4 px-4 text-center">Progress</th>
+                      <th className="py-4 px-6 text-right">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {filteredEmployees.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="py-12 text-center text-slate-400 text-xs">
+                          No matching records found in pipeline.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredEmployees.map(emp => {
+                        const stages = [
+                          emp.stage_progress.document_collection.status,
+                          emp.stage_progress.it_provisioning.status,
+                          emp.stage_progress.policy_signoff.status,
+                          emp.stage_progress.manager_intro.status
+                        ];
+                        const completed = stages.filter(s => s === "complete").length;
+                        const percent = Math.round((completed / stages.length) * 100);
+                        const isExpanded = !!expandedRows[emp.employee_id];
+                        const isSelected = !!selectedRows[emp.employee_id];
+
+                        const getStageChipClass = (status) => {
+                          if (status === "complete") return "bg-emerald-100 text-emerald-800 border-emerald-200";
+                          if (status === "in-progress") return "bg-amber-100 text-amber-800 border-amber-200";
+                          return "bg-slate-100 text-slate-400 border-slate-200";
+                        };
+
+                        return (
+                          <React.Fragment key={emp.employee_id}>
+                            <tr className={`hover:bg-slate-50/50 transition-colors ${isExpanded ? 'bg-slate-50/35' : ''}`}>
+                              <td className="py-4 px-6 text-center">
+                                <input 
+                                  type="checkbox" 
+                                  checked={isSelected}
+                                  onChange={() => toggleSelect(emp.employee_id)}
+                                />
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="font-semibold text-slate-900">{emp.full_name}</div>
+                                <div className="text-xs text-slate-400">{emp.email}</div>
+                              </td>
+                              <td className="py-4 px-4 text-xs font-semibold text-slate-600">
+                                <div>{emp.department}</div>
+                                <div className="text-[10px] text-slate-400 font-mono">{emp.role}</div>
+                              </td>
+                              <td className="py-4 px-4 text-xs font-mono text-slate-600">{emp.joining_date}</td>
+                              
+                              <td className="py-4 px-4 text-center">
+                                <span className={`text-[10px] border px-2 py-0.5 font-bold uppercase rounded-sm ${getStageChipClass(emp.stage_progress.document_collection.status)}`}>
+                                  {emp.stage_progress.document_collection.status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className={`text-[10px] border px-2 py-0.5 font-bold uppercase rounded-sm ${getStageChipClass(emp.stage_progress.it_provisioning.status)}`}>
+                                  {emp.stage_progress.it_provisioning.status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className={`text-[10px] border px-2 py-0.5 font-bold uppercase rounded-sm ${getStageChipClass(emp.stage_progress.policy_signoff.status)}`}>
+                                  {emp.stage_progress.policy_signoff.status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className={`text-[10px] border px-2 py-0.5 font-bold uppercase rounded-sm ${getStageChipClass(emp.stage_progress.manager_intro.status)}`}>
+                                  {emp.stage_progress.manager_intro.status}
+                                </span>
+                              </td>
+
+                              <td className="py-4 px-4 text-center font-mono font-bold text-slate-700">
+                                {percent}%
+                              </td>
+
+                              <td className="py-4 px-6 text-right">
+                                <button onClick={() => toggleRow(emp.employee_id)} className="text-slate-500 hover:text-slate-900 transition">
+                                  {isExpanded ? <i data-lucide="chevron-up" class="w-5 h-5"></i> : <i data-lucide="chevron-down" class="w-5 h-5"></i>}
+                                </button>
+                              </td>
+                            </tr>
+
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={10} className="bg-slate-50/50 p-6 border-b border-slate-200">
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    
+                                    {/* Dossier */}
+                                    <div className="space-y-4">
+                                      <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Onboarding Dossier</h4>
+                                      <div className="border border-slate-200 bg-white p-4 space-y-2 text-xs">
+                                        <div><strong>System UUID:</strong> <span className="font-mono">{emp.employee_id}</span></div>
+                                        <div><strong>Employment Type:</strong> <span className="capitalize">{emp.employment_type.replace("_", " ")}</span></div>
+                                        <div><strong>Policy Signature:</strong> <span className="italic font-semibold text-slate-800">{emp.policy_signature || "Awaiting signature"}</span></div>
+                                        <div><strong>Record Created:</strong> {new Date(emp.created_at).toLocaleString()}</div>
+                                        <div><strong>Record Updated:</strong> {new Date(emp.updated_at).toLocaleString()}</div>
+                                      </div>
+                                    </div>
+
+                                    {/* Files */}
+                                    <div className="space-y-4">
+                                      <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Verification Files</h4>
+                                      <div className="space-y-2">
+                                        {[
+                                          { id: "id_proof", title: "Identification Proof" },
+                                          { id: "degree_certificate", title: "Degree Certificate" },
+                                          { id: "signed_offer", title: "Signed Offer Document" }
+                                        ].map(doc => {
+                                          const docData = emp.docs[doc.id];
+                                          return (
+                                            <div key={doc.id} className="border border-slate-200 bg-white p-2.5 flex justify-between items-center text-xs">
+                                              <div>
+                                                <div className="font-semibold text-slate-800">{doc.title}</div>
+                                                {docData.uploaded_at ? (
+                                                  <span className="text-[10px] text-slate-400 font-mono">{(docData.file_size_bytes / 1024).toFixed(0)} KB</span>
+                                                ) : (
+                                                  <span className="text-[10px] text-slate-400">Awaiting upload</span>
+                                                )}
+                                              </div>
+                                              <div>
+                                                {docData.status === "verified" && (
+                                                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-sm">Verified</span>
+                                                )}
+                                                {docData.status === "rejected" && (
+                                                  <span className="text-[10px] bg-red-100 text-red-800 font-semibold px-2 py-0.5 rounded-sm" title={docData.reject_reason}>Rejected</span>
+                                                )}
+                                                {docData.status === "pending" && docData.s3_key && (
+                                                  <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-sm">Pending</span>
+                                                )}
+                                                {!docData.s3_key && (
+                                                  <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded-sm">Missing</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Action Interventions */}
+                                    <div className="space-y-4">
+                                      <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Manual Interventions</h4>
+                                      <div className="space-y-3">
+                                        {emp.stage_progress.it_provisioning.status === "in-progress" && (
+                                          <button 
+                                            onClick={() => completeStage(emp.employee_id, 'it_provisioning')}
+                                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 text-xs uppercase tracking-wider transition flex justify-center items-center gap-1.5"
+                                          >
+                                            <i data-lucide="check" class="w-4 h-4"></i> Approve IT Provisioning Complete
+                                          </button>
+                                        )}
+
+                                        {emp.stage_progress.manager_intro.status === "in-progress" && (
+                                          <button 
+                                            onClick={() => completeStage(emp.employee_id, 'manager_intro')}
+                                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 text-xs uppercase tracking-wider transition flex justify-center items-center gap-1.5"
+                                          >
+                                            <i data-lucide="check" class="w-4 h-4"></i> Approve Manager Checkoff
+                                          </button>
+                                        )}
+
+                                        {emp.onboarding_status !== "DAY1_READY" && emp.onboarding_status !== "FAILED" && (
+                                          <button 
+                                            onClick={() => sendReminder(emp.employee_id, emp.onboarding_status)}
+                                            className="w-full border border-slate-300 hover:border-slate-800 text-slate-700 hover:text-slate-900 font-semibold py-2.5 px-4 text-xs uppercase tracking-wider transition flex justify-center items-center gap-1.5"
+                                          >
+                                            <i data-lucide="send" class="w-3.5 h-3.5"></i> Dispatch Stage Reminder Email
+                                          </button>
+                                        )}
+
+                                        {emp.onboarding_status === "DAY1_READY" && (
+                                          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 text-xs text-center font-semibold">
+                                            Employee onboarding completed. System account is fully active.
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

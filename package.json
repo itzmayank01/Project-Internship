@@ -1,0 +1,23 @@
+{
+  "name": "hrms-onboarding-system",
+  "version": "1.0.0",
+  "description": "HRMS Digital Onboarding System",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "aws-cdk": "^2.120.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.120.0",
+    "constructs": "^10.3.0",
+    "zod": "^3.22.4",
+    "uuid": "^9.0.1",
+    "@types/uuid": "^9.0.8"
+  }
+}

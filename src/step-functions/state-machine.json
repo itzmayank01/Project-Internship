@@ -1,0 +1,173 @@
+{
+  "Comment": "HRMS Digital Onboarding Workflow Engine",
+  "StartAt": "Stage1DocCollection",
+  "States": {
+    "Stage1DocCollection": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${Stage1LambdaArn}",
+        "Payload": {
+          "employee_id.$": "$.employee_id",
+          "task_token.$": "$$.Task.Token"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "OnboardingFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "Stage2ITProvisioning"
+    },
+    "Stage2ITProvisioning": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${Stage2LambdaArn}",
+        "Payload": {
+          "employee_id.$": "$.employee_id",
+          "task_token.$": "$$.Task.Token"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "OnboardingFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "Stage3PolicySignoff"
+    },
+    "Stage3PolicySignoff": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${Stage3LambdaArn}",
+        "Payload": {
+          "employee_id.$": "$.employee_id",
+          "task_token.$": "$$.Task.Token"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "OnboardingFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "Stage4ManagerIntro"
+    },
+    "Stage4ManagerIntro": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${Stage4LambdaArn}",
+        "Payload": {
+          "employee_id.$": "$.employee_id",
+          "task_token.$": "$$.Task.Token"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "OnboardingFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "Stage5Day1Ready"
+    },
+    "Stage5Day1Ready": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${Stage5LambdaArn}",
+        "Payload": {
+          "employee_id.$": "$.employee_id"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "OnboardingFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "End": true
+    },
+    "OnboardingFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${Stage5LambdaArn}", 
+        "Payload": {
+          "employee_id.$": "$.employee_id",
+          "status": "FAILED",
+          "error.$": "$.error"
+        }
+      },
+      "End": true
+    }
+  }
+}
